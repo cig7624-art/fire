@@ -5,21 +5,10 @@ import requests
 import plotly.express as px
 import plotly.graph_objects as go
 
-st.set_page_config(
-    page_title="우리 가족 FIRE 대시보드",
-    page_icon="🔥",
-    layout="wide"
-)
+st.set_page_config(page_title="우리 가족 FIRE 대시보드", page_icon="🔥", layout="wide")
 
-# -----------------------------
-# 디자인 CSS
-# -----------------------------
 st.markdown("""
 <style>
-.main {
-    background-color: #f7f8fb;
-}
-
 .hero {
     background: linear-gradient(135deg, #111827 0%, #374151 100%);
     padding: 34px;
@@ -27,18 +16,8 @@ st.markdown("""
     color: white;
     margin-bottom: 24px;
 }
-
-.hero-title {
-    font-size: 36px;
-    font-weight: 900;
-    margin-bottom: 6px;
-}
-
-.hero-sub {
-    font-size: 16px;
-    color: #d1d5db;
-}
-
+.hero-title {font-size: 36px; font-weight: 900;}
+.hero-sub {font-size: 16px; color: #d1d5db;}
 .card {
     background: white;
     padding: 22px;
@@ -47,40 +26,12 @@ st.markdown("""
     border: 1px solid #edf0f5;
     margin-bottom: 16px;
 }
-
-.card-label {
-    color: #6b7280;
-    font-size: 14px;
-    margin-bottom: 8px;
-}
-
-.card-value {
-    color: #111827;
-    font-size: 30px;
-    font-weight: 900;
-}
-
-.card-sub {
-    color: #6b7280;
-    font-size: 13px;
-    margin-top: 6px;
-}
-
-.section-title {
-    font-size: 22px;
-    font-weight: 850;
-    margin: 12px 0 14px 0;
-}
-
-.good {
-    color: #059669;
-    font-weight: 800;
-}
-
-.bad {
-    color: #dc2626;
-    font-weight: 800;
-}
+.card-label {color: #6b7280; font-size: 14px;}
+.card-value {color: #111827; font-size: 30px; font-weight: 900;}
+.card-sub {color: #6b7280; font-size: 13px;}
+.section-title {font-size: 22px; font-weight: 850; margin: 12px 0 14px 0;}
+.good {color: #059669; font-weight: 800;}
+.bad {color: #dc2626; font-weight: 800;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -89,10 +40,9 @@ st.markdown("""
 # -----------------------------
 REAL_ESTATE_PURCHASE = 1_062_000_000
 REAL_ESTATE_CURRENT = 1_500_000_000
-
 REAL_ESTATE_DEBT = 750_000_000
-STOCK_DEBT = 15_000_000
-CRYPTO_DEBT = 14_000_000
+
+MINUS_ACCOUNT_DEBT = 29_000_000
 
 BASE_CASH = 3_500_000
 BASE_OTHER = 0
@@ -154,7 +104,7 @@ CASH = BASE_CASH + cash_input
 OTHER = BASE_OTHER + other_input
 
 # -----------------------------
-# 가격 계산
+# 주식 계산
 # -----------------------------
 fx = get_fx()
 
@@ -163,9 +113,9 @@ for s in stocks:
     usd_price = get_stock_price(s["ticker"])
     price_krw = usd_price * fx
     amount = price_krw * s["qty"]
-    principal = s["avg"] * s["qty"]
-    profit = amount - principal
-    rate = profit / principal * 100 if principal else 0
+    invest = s["avg"] * s["qty"]
+    profit = amount - invest
+    rate = profit / invest * 100 if invest else 0
 
     stock_rows.append({
         "종목": s["name"],
@@ -173,6 +123,7 @@ for s in stocks:
         "수량": s["qty"],
         "평단": s["avg"],
         "현재가": price_krw,
+        "투자금": invest,
         "평가금액": amount,
         "평가손익": profit,
         "수익률": rate
@@ -180,15 +131,20 @@ for s in stocks:
 
 stock_df = pd.DataFrame(stock_rows)
 stock_total = stock_df["평가금액"].sum()
-stock_net = stock_total - STOCK_DEBT
+stock_invest = stock_df["투자금"].sum()
+stock_profit = stock_total - stock_invest
+stock_return = stock_profit / stock_invest * 100 if stock_invest else 0
 
+# -----------------------------
+# 코인 계산
+# -----------------------------
 coin_rows = []
 for c in coins:
     price = get_coin_price(c["ticker"])
     amount = price * c["qty"]
-    principal = c["avg"] * c["qty"]
-    profit = amount - principal
-    rate = profit / principal * 100 if principal else 0
+    invest = c["avg"] * c["qty"]
+    profit = amount - invest
+    rate = profit / invest * 100 if invest else 0
 
     coin_rows.append({
         "종목": c["name"],
@@ -196,6 +152,7 @@ for c in coins:
         "수량": c["qty"],
         "평단": c["avg"],
         "현재가": price,
+        "투자금": invest,
         "평가금액": amount,
         "평가손익": profit,
         "수익률": rate
@@ -203,10 +160,15 @@ for c in coins:
 
 coin_df = pd.DataFrame(coin_rows)
 crypto_total = coin_df["평가금액"].sum()
-crypto_net = crypto_total - CRYPTO_DEBT
+crypto_invest = coin_df["투자금"].sum()
+crypto_profit = crypto_total - crypto_invest
+crypto_return = crypto_profit / crypto_invest * 100 if crypto_invest else 0
 
+# -----------------------------
+# 총자산 계산
+# -----------------------------
 total_asset = REAL_ESTATE_CURRENT + stock_total + crypto_total + CASH + OTHER
-total_debt = REAL_ESTATE_DEBT + STOCK_DEBT + CRYPTO_DEBT
+total_debt = REAL_ESTATE_DEBT + MINUS_ACCOUNT_DEBT
 net_asset = total_asset - total_debt
 
 history = pd.read_csv("asset_history.csv")
@@ -227,16 +189,8 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# -----------------------------
-# 탭
-# -----------------------------
 tab_home, tab_growth, tab_real, tab_stock, tab_coin, tab_data = st.tabs([
-    "🏠 홈",
-    "📈 성장 추이",
-    "🏢 부동산",
-    "📊 주식",
-    "🪙 코인",
-    "📋 데이터"
+    "🏠 홈", "📈 성장 추이", "🏢 부동산", "📊 주식", "🪙 코인", "📋 데이터"
 ])
 
 # -----------------------------
@@ -259,7 +213,7 @@ with tab_home:
         <div class="card">
             <div class="card-label">부채</div>
             <div class="card-value">{eok(total_debt)}</div>
-            <div class="card-sub">부동산·주식·코인 부채 합산</div>
+            <div class="card-sub">부동산 대출 + 마이너스통장</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -286,10 +240,11 @@ with tab_home:
 
     asset_table = pd.DataFrame([
         {"자산군": "부동산", "금액": REAL_ESTATE_CURRENT, "부채": REAL_ESTATE_DEBT, "순자산": REAL_ESTATE_CURRENT - REAL_ESTATE_DEBT},
-        {"자산군": "주식", "금액": stock_total, "부채": STOCK_DEBT, "순자산": stock_net},
-        {"자산군": "코인", "금액": crypto_total, "부채": CRYPTO_DEBT, "순자산": crypto_net},
+        {"자산군": "주식", "금액": stock_total, "부채": 0, "순자산": stock_total},
+        {"자산군": "코인", "금액": crypto_total, "부채": 0, "순자산": crypto_total},
         {"자산군": "현금", "금액": CASH, "부채": 0, "순자산": CASH},
         {"자산군": "기타", "금액": OTHER, "부채": 0, "순자산": OTHER},
+        {"자산군": "마이너스통장", "금액": 0, "부채": MINUS_ACCOUNT_DEBT, "순자산": -MINUS_ACCOUNT_DEBT},
         {"자산군": "합계", "금액": total_asset, "부채": total_debt, "순자산": net_asset},
     ])
 
@@ -306,8 +261,9 @@ with tab_home:
     col_a, col_b = st.columns([1, 1])
 
     with col_a:
+        pie_df = asset_table[(asset_table["자산군"] != "합계") & (asset_table["금액"] > 0)]
         fig_pie = px.pie(
-            asset_table[asset_table["자산군"] != "합계"],
+            pie_df,
             names="자산군",
             values="금액",
             hole=0.55,
@@ -317,8 +273,9 @@ with tab_home:
         st.plotly_chart(fig_pie, use_container_width=True)
 
     with col_b:
+        bar_df = asset_table[asset_table["자산군"] != "합계"]
         fig_bar = px.bar(
-            asset_table[asset_table["자산군"] != "합계"],
+            bar_df,
             x="자산군",
             y="순자산",
             text="순자산",
@@ -334,20 +291,19 @@ with tab_home:
 with tab_growth:
     st.markdown('<div class="section-title">📈 총자산 / 순자산 성장 추이</div>', unsafe_allow_html=True)
 
-    chart_history = history.copy()
     fig = go.Figure()
 
     fig.add_trace(go.Scatter(
-        x=chart_history["date"],
-        y=chart_history["total_asset"],
+        x=history["date"],
+        y=history["total_asset"],
         mode="lines+markers",
         name="총자산",
         line=dict(width=4)
     ))
 
     fig.add_trace(go.Scatter(
-        x=chart_history["date"],
-        y=chart_history["net_asset"],
+        x=history["date"],
+        y=history["net_asset"],
         mode="lines+markers",
         name="순자산",
         line=dict(width=4)
@@ -386,12 +342,7 @@ with tab_growth:
     )
 
     fig2.update_traces(line=dict(width=3))
-    fig2.update_layout(
-        height=520,
-        hovermode="x unified",
-        margin=dict(l=10, r=10, t=50, b=10)
-    )
-
+    fig2.update_layout(height=520, hovermode="x unified", margin=dict(l=10, r=10, t=50, b=10))
     st.plotly_chart(fig2, use_container_width=True)
 
 # -----------------------------
@@ -433,14 +384,16 @@ with tab_real:
 with tab_stock:
     st.markdown('<div class="section-title">📊 주식 상세</div>', unsafe_allow_html=True)
 
-    c1, c2, c3 = st.columns(3)
+    c1, c2, c3, c4 = st.columns(4)
     c1.metric("총 평가금액", eok(stock_total))
-    c2.metric("주식 부채", eok(STOCK_DEBT))
-    c3.metric("주식 순자산", eok(stock_net))
+    c2.metric("투자금", eok(stock_invest))
+    c3.metric("평가손익", eok(stock_profit))
+    c4.metric("수익률", pct(stock_return))
 
     display_stock = stock_df.copy()
     display_stock["평단"] = display_stock["평단"].apply(won)
     display_stock["현재가"] = display_stock["현재가"].apply(won)
+    display_stock["투자금"] = display_stock["투자금"].apply(won)
     display_stock["평가금액"] = display_stock["평가금액"].apply(won)
     display_stock["평가손익"] = display_stock["평가손익"].apply(won)
     display_stock["수익률"] = display_stock["수익률"].apply(lambda x: f"{x:.1f}%")
@@ -466,14 +419,16 @@ with tab_stock:
 with tab_coin:
     st.markdown('<div class="section-title">🪙 코인 상세</div>', unsafe_allow_html=True)
 
-    c1, c2, c3 = st.columns(3)
+    c1, c2, c3, c4 = st.columns(4)
     c1.metric("총 평가금액", eok(crypto_total))
-    c2.metric("코인 부채", eok(CRYPTO_DEBT))
-    c3.metric("코인 순자산", eok(crypto_net))
+    c2.metric("투자금", eok(crypto_invest))
+    c3.metric("평가손익", eok(crypto_profit))
+    c4.metric("수익률", pct(crypto_return))
 
     display_coin = coin_df.copy()
     display_coin["평단"] = display_coin["평단"].apply(won)
     display_coin["현재가"] = display_coin["현재가"].apply(won)
+    display_coin["투자금"] = display_coin["투자금"].apply(won)
     display_coin["평가금액"] = display_coin["평가금액"].apply(won)
     display_coin["평가손익"] = display_coin["평가손익"].apply(won)
     display_coin["수익률"] = display_coin["수익률"].apply(lambda x: f"{x:.1f}%")
