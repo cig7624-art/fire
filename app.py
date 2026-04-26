@@ -5,6 +5,9 @@ import requests
 import plotly.express as px
 import plotly.graph_objects as go
 
+SETTINGS_URL = "https://docs.google.com/spreadsheets/d/1sYMxDSBvvY_YDZLclhwiPg8n03VO7_Z55opvBVN1gLk/edit?gid=0#gid=0"
+HISTORY_URL = "https://docs.google.com/spreadsheets/d/1sYMxDSBvvY_YDZLclhwiPg8n03VO7_Z55opvBVN1gLk/edit?gid=2089697875#gid=2089697875"
+
 st.set_page_config(page_title="우리 가족 FIRE 대시보드", page_icon="🔥", layout="wide")
 
 st.markdown("""
