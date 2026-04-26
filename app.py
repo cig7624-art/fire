@@ -274,7 +274,7 @@ mom_rate = mom_change / prev_net * 100 if prev_net else 0
 # -----------------------------
 st.markdown("""
 <div class="hero">
-    <div class="hero-title">🔥 우리 가족 FIRE 대시보드</div>
+    <div class="hero-title">🔥 우리 가족 FIRE</div>
     <div class="hero-sub">총자산 · 부채 · 순자산 · 월별 성장 흐름을 한눈에 보는 가족 자산 현황판</div>
 </div>
 """, unsafe_allow_html=True)
