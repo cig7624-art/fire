@@ -8,6 +8,25 @@ st.set_page_config(page_title="FIRE 대시보드", layout="wide")
 st.title("🔥 우리 가족 FIRE 대시보드")
 st.caption("총자산 · 부채 · 순자산 · 월별 성장 추이를 한눈에 보는 가족 자산 현황판")
 
+st.subheader("💵 현금 / 기타 자산 입력")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    cash_input = st.number_input(
+        "추가 현금 입력 (원)",
+        min_value=0,
+        value=0,
+        step=1000000
+    )
+
+with col2:
+    other_input = st.number_input(
+        "기타 자산 입력 (원)",
+        min_value=0,
+        value=0,
+        step=1000000
+    )
 # -----------------------------
 # 기본 데이터
 # -----------------------------
