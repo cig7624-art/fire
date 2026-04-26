@@ -10,8 +10,8 @@ st.set_page_config(page_title="우리 가족 FIRE 대시보드", page_icon="🔥
 # -----------------------------
 # 구글시트 CSV 링크
 # -----------------------------
-SETTINGS_URL = "https://docs.google.com/spreadsheets/d/1sYMxDSBvvY_YDZLclhwiPg8n03VO7_Z55opvBVN1gLk/edit?gid=0#gid=0"
-HISTORY_URL = "https://docs.google.com/spreadsheets/d/1sYMxDSBvvY_YDZLclhwiPg8n03VO7_Z55opvBVN1gLk/edit?gid=2089697875#gid=2089697875"
+SETTINGS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRhR9Z_wa23keREvQMn-crYu9h35xsXBU4i9v8sFy3r8RCbcDjA2ulVzieSYFZl_oQgR3-M2LsBZCVl/pub?gid=0&single=true&output=csv"
+HISTORY_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRhR9Z_wa23keREvQMn-crYu9h35xsXBU4i9v8sFy3r8RCbcDjA2ulVzieSYFZl_oQgR3-M2LsBZCVl/pub?gid=2089697875&single=true&output=csv"
 
 # -----------------------------
 # 디자인
