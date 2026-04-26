@@ -5,11 +5,17 @@ import requests
 import plotly.express as px
 import plotly.graph_objects as go
 
+st.set_page_config(page_title="우리 가족 FIRE 대시보드", page_icon="🔥", layout="wide")
+
+# -----------------------------
+# 구글시트 CSV 링크
+# -----------------------------
 SETTINGS_URL = "https://docs.google.com/spreadsheets/d/1sYMxDSBvvY_YDZLclhwiPg8n03VO7_Z55opvBVN1gLk/edit?gid=0#gid=0"
 HISTORY_URL = "https://docs.google.com/spreadsheets/d/1sYMxDSBvvY_YDZLclhwiPg8n03VO7_Z55opvBVN1gLk/edit?gid=2089697875#gid=2089697875"
 
-st.set_page_config(page_title="우리 가족 FIRE 대시보드", page_icon="🔥", layout="wide")
-
+# -----------------------------
+# 디자인
+# -----------------------------
 st.markdown("""
 <style>
 .hero {
@@ -35,21 +41,9 @@ st.markdown("""
     box-shadow: 0 8px 24px rgba(0,0,0,0.06);
     border: 1px solid #edf0f5;
 }
-.metric-label {
-    color: #6b7280;
-    font-size: 13px;
-    margin-bottom: 6px;
-}
-.metric-value {
-    color: #111827;
-    font-size: 26px;
-    font-weight: 900;
-}
-.metric-sub {
-    color: #6b7280;
-    font-size: 12px;
-    margin-top: 6px;
-}
+.metric-label {color: #6b7280; font-size: 13px; margin-bottom: 6px;}
+.metric-value {color: #111827; font-size: 26px; font-weight: 900;}
+.metric-sub {color: #6b7280; font-size: 12px; margin-top: 6px;}
 .good {color: #059669 !important;}
 .bad {color: #dc2626 !important;}
 
@@ -66,80 +60,48 @@ st.markdown("""
     justify-content: space-between;
     align-items: center;
 }
-.asset-title {
-    font-size: 16px;
-    font-weight: 800;
-    color: #111827;
-}
-.asset-value {
-    font-size: 17px;
-    font-weight: 900;
-    color: #111827;
-}
-.asset-sub {
-    font-size: 12px;
-    color: #6b7280;
-    margin-top: 6px;
-}
-.section-title {
-    font-size: 22px;
-    font-weight: 850;
-    margin: 18px 0 12px 0;
-}
-.mobile-note {
-    color: #6b7280;
-    font-size: 13px;
-    margin-bottom: 8px;
-}
+.asset-title {font-size: 16px; font-weight: 800; color: #111827;}
+.asset-value {font-size: 17px; font-weight: 900; color: #111827;}
+.asset-sub {font-size: 12px; color: #6b7280; margin-top: 6px;}
+.section-title {font-size: 22px; font-weight: 850; margin: 18px 0 12px 0;}
 
 @media (max-width: 768px) {
-    .hero {
-        padding: 20px;
-        border-radius: 20px;
-    }
-    .hero-title {
-        font-size: 25px;
-        line-height: 1.25;
-    }
-    .hero-sub {
-        font-size: 13px;
-    }
-    .metric-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-    }
-    .metric-card {
-        padding: 14px;
-        border-radius: 16px;
-    }
-    .metric-label {
-        font-size: 12px;
-    }
-    .metric-value {
-        font-size: 21px;
-    }
-    .metric-sub {
-        font-size: 11px;
-    }
-    .section-title {
-        font-size: 19px;
-    }
+    .hero-title {font-size: 25px; line-height: 1.25;}
+    .hero-sub {font-size: 13px;}
+    .metric-grid {grid-template-columns: repeat(2, 1fr); gap: 10px;}
+    .metric-card {padding: 14px; border-radius: 16px;}
+    .metric-value {font-size: 21px;}
+    .section-title {font-size: 19px;}
 }
 </style>
 """, unsafe_allow_html=True)
 
 # -----------------------------
-# 기본 데이터
+# 구글시트 데이터 읽기
 # -----------------------------
-REAL_ESTATE_PURCHASE = 1_062_000_000
-REAL_ESTATE_CURRENT = 1_500_000_000
-REAL_ESTATE_DEBT = 750_000_000
+@st.cache_data(ttl=300)
+def load_settings(url):
+    df = pd.read_csv(url)
+    return dict(zip(df["item"], df["value"]))
 
-MINUS_ACCOUNT_DEBT = 29_000_000
+@st.cache_data(ttl=300)
+def load_history(url):
+    return pd.read_csv(url)
 
-BASE_CASH = 3_500_000
-BASE_OTHER = 0
+settings = load_settings(SETTINGS_URL)
 
+REAL_ESTATE_PURCHASE = int(settings["realestate_purchase"])
+REAL_ESTATE_CURRENT = int(settings["realestate_current"])
+REAL_ESTATE_DEBT = int(settings["realestate_debt"])
+MINUS_ACCOUNT_DEBT = int(settings["minus_account_debt"])
+BASE_CASH = int(settings["base_cash"])
+BASE_OTHER = int(settings["base_other"])
+
+history = load_history(HISTORY_URL)
+
+# -----------------------------
+# 보유 종목
+# -----------------------------
 stocks = [
     {"name": "JEPQ", "ticker": "JEPQ", "qty": 115, "avg": 84505},
     {"name": "QQQI", "ticker": "QQQI", "qty": 80, "avg": 76525},
@@ -187,7 +149,7 @@ def get_coin_price(ticker):
         return 0
 
 # -----------------------------
-# 입력 사이드바
+# 입력
 # -----------------------------
 st.sidebar.title("⚙️ 입력 / 설정")
 cash_input = st.sidebar.number_input("추가 현금 입력", min_value=0, value=0, step=1_000_000)
@@ -264,7 +226,6 @@ total_asset = REAL_ESTATE_CURRENT + stock_total + crypto_total + CASH + OTHER
 total_debt = REAL_ESTATE_DEBT + MINUS_ACCOUNT_DEBT
 net_asset = total_asset - total_debt
 
-history = pd.read_csv("asset_history.csv")
 history["total_asset"] = history[["realestate", "stock", "crypto", "cash", "other"]].sum(axis=1)
 history["net_asset"] = history["total_asset"] - history["debt"]
 
@@ -331,7 +292,6 @@ with tab_home:
 
     asset_table["비중"] = asset_table["금액"] / total_asset * 100
 
-    # 모바일용 카드 리스트
     for _, row in asset_table[asset_table["자산군"] != "합계"].iterrows():
         value_color = "bad" if row["순자산"] < 0 else ""
         st.markdown(f"""
@@ -361,24 +321,12 @@ with tab_home:
     st.markdown('<div class="section-title">🧩 현재 자산 구성</div>', unsafe_allow_html=True)
 
     pie_df = asset_table[(asset_table["자산군"] != "합계") & (asset_table["금액"] > 0)]
-    fig_pie = px.pie(
-        pie_df,
-        names="자산군",
-        values="금액",
-        hole=0.55,
-        title="자산 구성"
-    )
+    fig_pie = px.pie(pie_df, names="자산군", values="금액", hole=0.55, title="자산 구성")
     fig_pie.update_layout(height=360, margin=dict(l=5, r=5, t=45, b=5), legend=dict(orientation="h"))
     st.plotly_chart(fig_pie, use_container_width=True)
 
     bar_df = asset_table[asset_table["자산군"] != "합계"]
-    fig_bar = px.bar(
-        bar_df,
-        x="자산군",
-        y="순자산",
-        text="순자산",
-        title="자산군별 순자산"
-    )
+    fig_bar = px.bar(bar_df, x="자산군", y="순자산", text="순자산", title="자산군별 순자산")
     fig_bar.update_traces(texttemplate="%{text:,.0f}", textposition="outside")
     fig_bar.update_layout(height=380, margin=dict(l=5, r=5, t=45, b=5))
     st.plotly_chart(fig_bar, use_container_width=True)
@@ -392,19 +340,13 @@ with tab_growth:
     fig = go.Figure()
 
     fig.add_trace(go.Scatter(
-        x=history["date"],
-        y=history["total_asset"],
-        mode="lines+markers",
-        name="총자산",
-        line=dict(width=4)
+        x=history["date"], y=history["total_asset"],
+        mode="lines+markers", name="총자산", line=dict(width=4)
     ))
 
     fig.add_trace(go.Scatter(
-        x=history["date"],
-        y=history["net_asset"],
-        mode="lines+markers",
-        name="순자산",
-        line=dict(width=4)
+        x=history["date"], y=history["net_asset"],
+        mode="lines+markers", name="순자산", line=dict(width=4)
     ))
 
     fig.update_layout(
@@ -431,15 +373,7 @@ with tab_growth:
 
     long_df = growth_df.melt(id_vars="date", var_name="자산군", value_name="금액")
 
-    fig2 = px.line(
-        long_df,
-        x="date",
-        y="금액",
-        color="자산군",
-        markers=True,
-        title="자산군별 월별 변화"
-    )
-
+    fig2 = px.line(long_df, x="date", y="금액", color="자산군", markers=True, title="자산군별 월별 변화")
     fig2.update_traces(line=dict(width=3))
     fig2.update_layout(
         height=430,
@@ -447,6 +381,7 @@ with tab_growth:
         margin=dict(l=5, r=5, t=45, b=5),
         legend=dict(orientation="h")
     )
+
     st.plotly_chart(fig2, use_container_width=True)
 
 # -----------------------------
@@ -461,23 +396,10 @@ with tab_real:
 
     st.markdown(f"""
     <div class="metric-grid">
-        <div class="metric-card">
-            <div class="metric-label">매수금액</div>
-            <div class="metric-value">{eok(REAL_ESTATE_PURCHASE)}</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-label">현재시세</div>
-            <div class="metric-value">{eok(REAL_ESTATE_CURRENT)}</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-label">차액</div>
-            <div class="metric-value good">{eok(real_profit)}</div>
-            <div class="metric-sub">{pct(real_return)}</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-label">순자산</div>
-            <div class="metric-value">{eok(real_net)}</div>
-        </div>
+        <div class="metric-card"><div class="metric-label">매수금액</div><div class="metric-value">{eok(REAL_ESTATE_PURCHASE)}</div></div>
+        <div class="metric-card"><div class="metric-label">현재시세</div><div class="metric-value">{eok(REAL_ESTATE_CURRENT)}</div></div>
+        <div class="metric-card"><div class="metric-label">차액</div><div class="metric-value good">{eok(real_profit)}</div><div class="metric-sub">{pct(real_return)}</div></div>
+        <div class="metric-card"><div class="metric-label">순자산</div><div class="metric-value">{eok(real_net)}</div></div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -489,13 +411,8 @@ with tab_real:
         {"항목": "순자산", "금액": real_net},
     ])
 
-    st.dataframe(
-        real_df.assign(금액=real_df["금액"].apply(won)),
-        hide_index=True,
-        use_container_width=True
-    )
-
-    st.info("부동산 현재시세는 우선 월 1회 직접 업데이트하는 방식입니다.")
+    st.dataframe(real_df.assign(금액=real_df["금액"].apply(won)), hide_index=True, use_container_width=True)
+    st.info("부동산 현재시세는 구글시트 settings에서 수정하면 반영됩니다.")
 
 # -----------------------------
 # 주식
@@ -507,42 +424,21 @@ with tab_stock:
 
     st.markdown(f"""
     <div class="metric-grid">
-        <div class="metric-card">
-            <div class="metric-label">총 평가금액</div>
-            <div class="metric-value">{eok(stock_total)}</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-label">투자금</div>
-            <div class="metric-value">{eok(stock_invest)}</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-label">평가손익</div>
-            <div class="metric-value {profit_class}">{eok(stock_profit)}</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-label">수익률</div>
-            <div class="metric-value {profit_class}">{pct(stock_return)}</div>
-        </div>
+        <div class="metric-card"><div class="metric-label">총 평가금액</div><div class="metric-value">{eok(stock_total)}</div></div>
+        <div class="metric-card"><div class="metric-label">투자금</div><div class="metric-value">{eok(stock_invest)}</div></div>
+        <div class="metric-card"><div class="metric-label">평가손익</div><div class="metric-value {profit_class}">{eok(stock_profit)}</div></div>
+        <div class="metric-card"><div class="metric-label">수익률</div><div class="metric-value {profit_class}">{pct(stock_return)}</div></div>
     </div>
     """, unsafe_allow_html=True)
 
     display_stock = stock_df.copy()
-    display_stock["평단"] = display_stock["평단"].apply(won)
-    display_stock["현재가"] = display_stock["현재가"].apply(won)
-    display_stock["투자금"] = display_stock["투자금"].apply(won)
-    display_stock["평가금액"] = display_stock["평가금액"].apply(won)
-    display_stock["평가손익"] = display_stock["평가손익"].apply(won)
+    for col in ["평단", "현재가", "투자금", "평가금액", "평가손익"]:
+        display_stock[col] = display_stock[col].apply(won)
     display_stock["수익률"] = display_stock["수익률"].apply(lambda x: f"{x:.1f}%")
 
     st.dataframe(display_stock, hide_index=True, use_container_width=True)
 
-    fig_stock = px.bar(
-        stock_df,
-        x="종목",
-        y="평가금액",
-        text="평가금액",
-        title="종목별 평가금액"
-    )
+    fig_stock = px.bar(stock_df, x="종목", y="평가금액", text="평가금액", title="종목별 평가금액")
     fig_stock.update_traces(texttemplate="%{text:,.0f}", textposition="outside")
     fig_stock.update_layout(height=380, margin=dict(l=5, r=5, t=45, b=5))
     st.plotly_chart(fig_stock, use_container_width=True)
@@ -559,42 +455,21 @@ with tab_coin:
 
     st.markdown(f"""
     <div class="metric-grid">
-        <div class="metric-card">
-            <div class="metric-label">총 평가금액</div>
-            <div class="metric-value">{eok(crypto_total)}</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-label">투자금</div>
-            <div class="metric-value">{eok(crypto_invest)}</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-label">평가손익</div>
-            <div class="metric-value {crypto_class}">{eok(crypto_profit)}</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-label">수익률</div>
-            <div class="metric-value {crypto_class}">{pct(crypto_return)}</div>
-        </div>
+        <div class="metric-card"><div class="metric-label">총 평가금액</div><div class="metric-value">{eok(crypto_total)}</div></div>
+        <div class="metric-card"><div class="metric-label">투자금</div><div class="metric-value">{eok(crypto_invest)}</div></div>
+        <div class="metric-card"><div class="metric-label">평가손익</div><div class="metric-value {crypto_class}">{eok(crypto_profit)}</div></div>
+        <div class="metric-card"><div class="metric-label">수익률</div><div class="metric-value {crypto_class}">{pct(crypto_return)}</div></div>
     </div>
     """, unsafe_allow_html=True)
 
     display_coin = coin_df.copy()
-    display_coin["평단"] = display_coin["평단"].apply(won)
-    display_coin["현재가"] = display_coin["현재가"].apply(won)
-    display_coin["투자금"] = display_coin["투자금"].apply(won)
-    display_coin["평가금액"] = display_coin["평가금액"].apply(won)
-    display_coin["평가손익"] = display_coin["평가손익"].apply(won)
+    for col in ["평단", "현재가", "투자금", "평가금액", "평가손익"]:
+        display_coin[col] = display_coin[col].apply(won)
     display_coin["수익률"] = display_coin["수익률"].apply(lambda x: f"{x:.1f}%")
 
     st.dataframe(display_coin, hide_index=True, use_container_width=True)
 
-    fig_coin = px.bar(
-        coin_df,
-        x="종목",
-        y="평가금액",
-        text="평가금액",
-        title="코인별 평가금액"
-    )
+    fig_coin = px.bar(coin_df, x="종목", y="평가금액", text="평가금액", title="코인별 평가금액")
     fig_coin.update_traces(texttemplate="%{text:,.0f}", textposition="outside")
     fig_coin.update_layout(height=380, margin=dict(l=5, r=5, t=45, b=5))
     st.plotly_chart(fig_coin, use_container_width=True)
