@@ -34,8 +34,11 @@ REAL_ESTATE_PURCHASE = 1_062_000_000
 REAL_ESTATE_CURRENT = 1_340_000_000
 REAL_ESTATE_DEBT = 750_000_000
 
-CASH = 15_000_000
-OTHER = 0
+BASE_CASH = 15_000_000
+BASE_OTHER = 0
+
+CASH = BASE_CASH + cash_input
+OTHER = BASE_OTHER + other_input
 
 stocks = [
     {"name": "JEPQ", "ticker": "JEPQ", "qty": 115, "avg": 84505},
