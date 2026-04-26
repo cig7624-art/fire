@@ -11,27 +11,117 @@ st.markdown("""
 <style>
 .hero {
     background: linear-gradient(135deg, #111827 0%, #374151 100%);
-    padding: 34px;
-    border-radius: 28px;
+    padding: 24px;
+    border-radius: 24px;
     color: white;
-    margin-bottom: 24px;
+    margin-bottom: 18px;
 }
-.hero-title {font-size: 36px; font-weight: 900;}
-.hero-sub {font-size: 16px; color: #d1d5db;}
-.card {
+.hero-title {font-size: 32px; font-weight: 900;}
+.hero-sub {font-size: 15px; color: #d1d5db;}
+
+.metric-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 18px;
+}
+.metric-card {
     background: white;
-    padding: 22px;
-    border-radius: 22px;
+    padding: 18px;
+    border-radius: 20px;
     box-shadow: 0 8px 24px rgba(0,0,0,0.06);
     border: 1px solid #edf0f5;
-    margin-bottom: 16px;
 }
-.card-label {color: #6b7280; font-size: 14px;}
-.card-value {color: #111827; font-size: 30px; font-weight: 900;}
-.card-sub {color: #6b7280; font-size: 13px;}
-.section-title {font-size: 22px; font-weight: 850; margin: 12px 0 14px 0;}
-.good {color: #059669; font-weight: 800;}
-.bad {color: #dc2626; font-weight: 800;}
+.metric-label {
+    color: #6b7280;
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+.metric-value {
+    color: #111827;
+    font-size: 26px;
+    font-weight: 900;
+}
+.metric-sub {
+    color: #6b7280;
+    font-size: 12px;
+    margin-top: 6px;
+}
+.good {color: #059669 !important;}
+.bad {color: #dc2626 !important;}
+
+.asset-card {
+    background: white;
+    padding: 15px 16px;
+    border-radius: 16px;
+    border: 1px solid #edf0f5;
+    box-shadow: 0 5px 16px rgba(0,0,0,0.045);
+    margin-bottom: 10px;
+}
+.asset-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.asset-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: #111827;
+}
+.asset-value {
+    font-size: 17px;
+    font-weight: 900;
+    color: #111827;
+}
+.asset-sub {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 6px;
+}
+.section-title {
+    font-size: 22px;
+    font-weight: 850;
+    margin: 18px 0 12px 0;
+}
+.mobile-note {
+    color: #6b7280;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+@media (max-width: 768px) {
+    .hero {
+        padding: 20px;
+        border-radius: 20px;
+    }
+    .hero-title {
+        font-size: 25px;
+        line-height: 1.25;
+    }
+    .hero-sub {
+        font-size: 13px;
+    }
+    .metric-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+    .metric-card {
+        padding: 14px;
+        border-radius: 16px;
+    }
+    .metric-label {
+        font-size: 12px;
+    }
+    .metric-value {
+        font-size: 21px;
+    }
+    .metric-sub {
+        font-size: 11px;
+    }
+    .section-title {
+        font-size: 19px;
+    }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -185,56 +275,44 @@ mom_rate = mom_change / prev_net * 100 if prev_net else 0
 st.markdown("""
 <div class="hero">
     <div class="hero-title">🔥 우리 가족 FIRE 대시보드</div>
-    <div class="hero-sub">총자산 · 부채 · 순자산 · 자산 성장 흐름을 한눈에 보는 가족 자산 현황판</div>
+    <div class="hero-sub">총자산 · 부채 · 순자산 · 월별 성장 흐름을 한눈에 보는 가족 자산 현황판</div>
 </div>
 """, unsafe_allow_html=True)
 
 tab_home, tab_growth, tab_real, tab_stock, tab_coin, tab_data = st.tabs([
-    "🏠 홈", "📈 성장 추이", "🏢 부동산", "📊 주식", "🪙 코인", "📋 데이터"
+    "🏠 홈", "📈 성장", "🏢 부동산", "📊 주식", "🪙 코인", "📋 데이터"
 ])
 
 # -----------------------------
 # 홈
 # -----------------------------
 with tab_home:
-    c1, c2, c3, c4 = st.columns(4)
+    change_class = "good" if mom_change >= 0 else "bad"
 
-    with c1:
-        st.markdown(f"""
-        <div class="card">
-            <div class="card-label">총자산</div>
-            <div class="card-value">{eok(total_asset)}</div>
-            <div class="card-sub">부동산 + 주식 + 코인 + 현금 + 기타</div>
+    st.markdown(f"""
+    <div class="metric-grid">
+        <div class="metric-card">
+            <div class="metric-label">총자산</div>
+            <div class="metric-value">{eok(total_asset)}</div>
+            <div class="metric-sub">부동산 + 주식 + 코인 + 현금</div>
         </div>
-        """, unsafe_allow_html=True)
-
-    with c2:
-        st.markdown(f"""
-        <div class="card">
-            <div class="card-label">부채</div>
-            <div class="card-value">{eok(total_debt)}</div>
-            <div class="card-sub">부동산 대출 + 마이너스통장</div>
+        <div class="metric-card">
+            <div class="metric-label">부채</div>
+            <div class="metric-value">{eok(total_debt)}</div>
+            <div class="metric-sub">주담대 + 마이너스통장</div>
         </div>
-        """, unsafe_allow_html=True)
-
-    with c3:
-        st.markdown(f"""
-        <div class="card">
-            <div class="card-label">순자산</div>
-            <div class="card-value">{eok(net_asset)}</div>
-            <div class="card-sub">총자산 - 부채</div>
+        <div class="metric-card">
+            <div class="metric-label">순자산</div>
+            <div class="metric-value">{eok(net_asset)}</div>
+            <div class="metric-sub">총자산 - 부채</div>
         </div>
-        """, unsafe_allow_html=True)
-
-    with c4:
-        change_class = "good" if mom_change >= 0 else "bad"
-        st.markdown(f"""
-        <div class="card">
-            <div class="card-label">전월대비</div>
-            <div class="card-value {change_class}">{eok(mom_change)}</div>
-            <div class="card-sub">{pct(mom_rate)}</div>
+        <div class="metric-card">
+            <div class="metric-label">전월대비</div>
+            <div class="metric-value {change_class}">{eok(mom_change)}</div>
+            <div class="metric-sub">{pct(mom_rate)}</div>
         </div>
-        """, unsafe_allow_html=True)
+    </div>
+    """, unsafe_allow_html=True)
 
     st.markdown('<div class="section-title">📊 자산군별 현황</div>', unsafe_allow_html=True)
 
@@ -250,40 +328,57 @@ with tab_home:
 
     asset_table["비중"] = asset_table["금액"] / total_asset * 100
 
-    show_asset = asset_table.copy()
-    show_asset["금액"] = show_asset["금액"].apply(won)
-    show_asset["부채"] = show_asset["부채"].apply(won)
-    show_asset["순자산"] = show_asset["순자산"].apply(won)
-    show_asset["비중"] = show_asset["비중"].apply(lambda x: f"{x:.1f}%")
+    # 모바일용 카드 리스트
+    for _, row in asset_table[asset_table["자산군"] != "합계"].iterrows():
+        value_color = "bad" if row["순자산"] < 0 else ""
+        st.markdown(f"""
+        <div class="asset-card">
+            <div class="asset-row">
+                <div class="asset-title">{row["자산군"]}</div>
+                <div class="asset-value {value_color}">{eok(row["순자산"])}</div>
+            </div>
+            <div class="asset-sub">
+                금액 {won(row["금액"])} · 부채 {won(row["부채"])} · 비중 {row["비중"]:.1f}%
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-    st.dataframe(show_asset, hide_index=True, use_container_width=True)
+    st.markdown(f"""
+    <div class="asset-card">
+        <div class="asset-row">
+            <div class="asset-title">합계</div>
+            <div class="asset-value">{eok(net_asset)}</div>
+        </div>
+        <div class="asset-sub">
+            총자산 {won(total_asset)} · 부채 {won(total_debt)}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    col_a, col_b = st.columns([1, 1])
+    st.markdown('<div class="section-title">🧩 현재 자산 구성</div>', unsafe_allow_html=True)
 
-    with col_a:
-        pie_df = asset_table[(asset_table["자산군"] != "합계") & (asset_table["금액"] > 0)]
-        fig_pie = px.pie(
-            pie_df,
-            names="자산군",
-            values="금액",
-            hole=0.55,
-            title="현재 자산 구성"
-        )
-        fig_pie.update_layout(height=420, margin=dict(l=10, r=10, t=50, b=10))
-        st.plotly_chart(fig_pie, use_container_width=True)
+    pie_df = asset_table[(asset_table["자산군"] != "합계") & (asset_table["금액"] > 0)]
+    fig_pie = px.pie(
+        pie_df,
+        names="자산군",
+        values="금액",
+        hole=0.55,
+        title="자산 구성"
+    )
+    fig_pie.update_layout(height=360, margin=dict(l=5, r=5, t=45, b=5), legend=dict(orientation="h"))
+    st.plotly_chart(fig_pie, use_container_width=True)
 
-    with col_b:
-        bar_df = asset_table[asset_table["자산군"] != "합계"]
-        fig_bar = px.bar(
-            bar_df,
-            x="자산군",
-            y="순자산",
-            text="순자산",
-            title="자산군별 순자산"
-        )
-        fig_bar.update_traces(texttemplate="%{text:,.0f}", textposition="outside")
-        fig_bar.update_layout(height=420, margin=dict(l=10, r=10, t=50, b=10))
-        st.plotly_chart(fig_bar, use_container_width=True)
+    bar_df = asset_table[asset_table["자산군"] != "합계"]
+    fig_bar = px.bar(
+        bar_df,
+        x="자산군",
+        y="순자산",
+        text="순자산",
+        title="자산군별 순자산"
+    )
+    fig_bar.update_traces(texttemplate="%{text:,.0f}", textposition="outside")
+    fig_bar.update_layout(height=380, margin=dict(l=5, r=5, t=45, b=5))
+    st.plotly_chart(fig_bar, use_container_width=True)
 
 # -----------------------------
 # 성장 추이
@@ -310,11 +405,12 @@ with tab_growth:
     ))
 
     fig.update_layout(
-        height=500,
+        height=420,
         hovermode="x unified",
         yaxis_title="금액",
         xaxis_title="월",
-        margin=dict(l=10, r=10, t=30, b=10)
+        margin=dict(l=5, r=5, t=30, b=5),
+        legend=dict(orientation="h")
     )
 
     st.plotly_chart(fig, use_container_width=True)
@@ -342,7 +438,12 @@ with tab_growth:
     )
 
     fig2.update_traces(line=dict(width=3))
-    fig2.update_layout(height=520, hovermode="x unified", margin=dict(l=10, r=10, t=50, b=10))
+    fig2.update_layout(
+        height=430,
+        hovermode="x unified",
+        margin=dict(l=5, r=5, t=45, b=5),
+        legend=dict(orientation="h")
+    )
     st.plotly_chart(fig2, use_container_width=True)
 
 # -----------------------------
@@ -355,12 +456,27 @@ with tab_real:
     real_net = REAL_ESTATE_CURRENT - REAL_ESTATE_DEBT
     real_return = real_profit / REAL_ESTATE_PURCHASE * 100
 
-    c1, c2, c3, c4 = st.columns(4)
-
-    c1.metric("매수금액", eok(REAL_ESTATE_PURCHASE))
-    c2.metric("현재시세", eok(REAL_ESTATE_CURRENT))
-    c3.metric("차액", eok(real_profit), pct(real_return))
-    c4.metric("순자산", eok(real_net))
+    st.markdown(f"""
+    <div class="metric-grid">
+        <div class="metric-card">
+            <div class="metric-label">매수금액</div>
+            <div class="metric-value">{eok(REAL_ESTATE_PURCHASE)}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">현재시세</div>
+            <div class="metric-value">{eok(REAL_ESTATE_CURRENT)}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">차액</div>
+            <div class="metric-value good">{eok(real_profit)}</div>
+            <div class="metric-sub">{pct(real_return)}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">순자산</div>
+            <div class="metric-value">{eok(real_net)}</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     real_df = pd.DataFrame([
         {"항목": "매수금액", "금액": REAL_ESTATE_PURCHASE},
@@ -384,11 +500,28 @@ with tab_real:
 with tab_stock:
     st.markdown('<div class="section-title">📊 주식 상세</div>', unsafe_allow_html=True)
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("총 평가금액", eok(stock_total))
-    c2.metric("투자금", eok(stock_invest))
-    c3.metric("평가손익", eok(stock_profit))
-    c4.metric("수익률", pct(stock_return))
+    profit_class = "good" if stock_profit >= 0 else "bad"
+
+    st.markdown(f"""
+    <div class="metric-grid">
+        <div class="metric-card">
+            <div class="metric-label">총 평가금액</div>
+            <div class="metric-value">{eok(stock_total)}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">투자금</div>
+            <div class="metric-value">{eok(stock_invest)}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">평가손익</div>
+            <div class="metric-value {profit_class}">{eok(stock_profit)}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">수익률</div>
+            <div class="metric-value {profit_class}">{pct(stock_return)}</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     display_stock = stock_df.copy()
     display_stock["평단"] = display_stock["평단"].apply(won)
@@ -408,7 +541,7 @@ with tab_stock:
         title="종목별 평가금액"
     )
     fig_stock.update_traces(texttemplate="%{text:,.0f}", textposition="outside")
-    fig_stock.update_layout(height=450)
+    fig_stock.update_layout(height=380, margin=dict(l=5, r=5, t=45, b=5))
     st.plotly_chart(fig_stock, use_container_width=True)
 
     st.caption(f"환율 적용: 1달러 = {fx:,.0f}원")
@@ -419,11 +552,28 @@ with tab_stock:
 with tab_coin:
     st.markdown('<div class="section-title">🪙 코인 상세</div>', unsafe_allow_html=True)
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("총 평가금액", eok(crypto_total))
-    c2.metric("투자금", eok(crypto_invest))
-    c3.metric("평가손익", eok(crypto_profit))
-    c4.metric("수익률", pct(crypto_return))
+    crypto_class = "good" if crypto_profit >= 0 else "bad"
+
+    st.markdown(f"""
+    <div class="metric-grid">
+        <div class="metric-card">
+            <div class="metric-label">총 평가금액</div>
+            <div class="metric-value">{eok(crypto_total)}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">투자금</div>
+            <div class="metric-value">{eok(crypto_invest)}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">평가손익</div>
+            <div class="metric-value {crypto_class}">{eok(crypto_profit)}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">수익률</div>
+            <div class="metric-value {crypto_class}">{pct(crypto_return)}</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     display_coin = coin_df.copy()
     display_coin["평단"] = display_coin["평단"].apply(won)
@@ -443,7 +593,7 @@ with tab_coin:
         title="코인별 평가금액"
     )
     fig_coin.update_traces(texttemplate="%{text:,.0f}", textposition="outside")
-    fig_coin.update_layout(height=450)
+    fig_coin.update_layout(height=380, margin=dict(l=5, r=5, t=45, b=5))
     st.plotly_chart(fig_coin, use_container_width=True)
 
 # -----------------------------
