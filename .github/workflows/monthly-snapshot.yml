@@ -1,0 +1,49 @@
+name: Monthly Asset Snapshot
+
+on:
+  schedule:
+    - cron: "50 14 28-31 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install pandas yfinance requests
+
+      - name: Check if today is month-end in Korea
+        run: |
+          python - <<'PY'
+          from datetime import datetime, timedelta, timezone
+          import sys
+
+          kst = timezone(timedelta(hours=9))
+          today = datetime.now(kst).date()
+          tomorrow = today + timedelta(days=1)
+
+          if tomorrow.month == today.month:
+              print("Not month-end. Skip.")
+              sys.exit(78)
+
+          print("Month-end confirmed:", today)
+          PY
+
+      - run: python snapshot.py
+
+      - name: Commit updated asset history
+        run: |
+          git config user.name "fire-dashboard-bot"
+          git config user.email "bot@example.com"
+          git add asset_history.csv
+          git commit -m "Monthly asset snapshot" || echo "No changes"
+          git push
