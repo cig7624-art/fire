@@ -8,37 +8,18 @@ st.set_page_config(page_title="FIRE 대시보드", layout="wide")
 st.title("🔥 우리 가족 FIRE 대시보드")
 st.caption("총자산 · 부채 · 순자산 · 월별 성장 추이를 한눈에 보는 가족 자산 현황판")
 
-st.subheader("💵 현금 / 기타 자산 입력")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    cash_input = st.number_input(
-        "추가 현금 입력 (원)",
-        min_value=0,
-        value=0,
-        step=1000000
-    )
-
-with col2:
-    other_input = st.number_input(
-        "기타 자산 입력 (원)",
-        min_value=0,
-        value=0,
-        step=1000000
-    )
 # -----------------------------
 # 기본 데이터
 # -----------------------------
 REAL_ESTATE_PURCHASE = 1_062_000_000
 REAL_ESTATE_CURRENT = 1_340_000_000
+
 REAL_ESTATE_DEBT = 750_000_000
+STOCK_DEBT = 34_000_000
+CRYPTO_DEBT = 14_000_000
 
-BASE_CASH = 0
-BASE_OTHER = 0
-
-CASH = BASE_CASH + cash_input
-OTHER = BASE_OTHER + other_input
+CASH = 15_000_000
+OTHER = 0
 
 stocks = [
     {"name": "JEPQ", "ticker": "JEPQ", "qty": 115, "avg": 84505},
@@ -59,6 +40,34 @@ def won(x):
 
 def eok(x):
     return f"{x/100000000:.2f}억"
+
+# -----------------------------
+# 현금 / 기타 수기 입력
+# -----------------------------
+st.subheader("💵 현금 / 기타 자산 입력")
+
+col_cash, col_other = st.columns(2)
+
+with col_cash:
+    cash_input = st.number_input(
+        "추가 현금 입력",
+        min_value=0,
+        value=0,
+        step=1_000_000
+    )
+
+with col_other:
+    other_input = st.number_input(
+        "기타 자산 입력",
+        min_value=0,
+        value=0,
+        step=1_000_000
+    )
+
+CASH = CASH + cash_input
+OTHER = OTHER + other_input
+
+st.divider()
 
 # -----------------------------
 # 주식 현재가
@@ -82,6 +91,7 @@ def get_stock_price(ticker):
 fx = get_fx()
 
 stock_rows = []
+
 for s in stocks:
     usd_price = get_stock_price(s["ticker"])
     price_krw = usd_price * fx
@@ -102,6 +112,7 @@ for s in stocks:
 
 stock_df = pd.DataFrame(stock_rows)
 stock_total = stock_df["평가금액"].sum()
+stock_net = stock_total - STOCK_DEBT
 
 # -----------------------------
 # 코인 현재가
@@ -116,6 +127,7 @@ def get_coin_price(ticker):
         return 0
 
 coin_rows = []
+
 for c in coins:
     price = get_coin_price(c["ticker"])
     amount = price * c["qty"]
@@ -135,12 +147,13 @@ for c in coins:
 
 coin_df = pd.DataFrame(coin_rows)
 crypto_total = coin_df["평가금액"].sum()
+crypto_net = crypto_total - CRYPTO_DEBT
 
 # -----------------------------
 # 총자산 계산
 # -----------------------------
 total_asset = REAL_ESTATE_CURRENT + stock_total + crypto_total + CASH + OTHER
-debt = REAL_ESTATE_DEBT
+debt = REAL_ESTATE_DEBT + STOCK_DEBT + CRYPTO_DEBT
 net_asset = total_asset - debt
 
 history = pd.read_csv("asset_history.csv")
@@ -170,19 +183,21 @@ st.divider()
 st.subheader("📊 자산군별 현황")
 
 asset_table = pd.DataFrame([
-    {"자산군": "부동산", "금액": REAL_ESTATE_CURRENT},
-    {"자산군": "주식", "금액": stock_total},
-    {"자산군": "코인", "금액": crypto_total},
-    {"자산군": "현금", "금액": CASH},
-    {"자산군": "기타", "금액": OTHER},
-    {"자산군": "합계", "금액": total_asset},
+    {"자산군": "부동산", "총자산": REAL_ESTATE_CURRENT, "부채": REAL_ESTATE_DEBT, "순자산": REAL_ESTATE_CURRENT - REAL_ESTATE_DEBT},
+    {"자산군": "주식", "총자산": stock_total, "부채": STOCK_DEBT, "순자산": stock_net},
+    {"자산군": "코인", "총자산": crypto_total, "부채": CRYPTO_DEBT, "순자산": crypto_net},
+    {"자산군": "현금", "총자산": CASH, "부채": 0, "순자산": CASH},
+    {"자산군": "기타", "총자산": OTHER, "부채": 0, "순자산": OTHER},
+    {"자산군": "합계", "총자산": total_asset, "부채": debt, "순자산": net_asset},
 ])
 
-asset_table["비중"] = asset_table["금액"] / total_asset * 100
+asset_table["비중"] = asset_table["총자산"] / total_asset * 100
 
 st.dataframe(
     asset_table.assign(
-        금액=asset_table["금액"].apply(won),
+        총자산=asset_table["총자산"].apply(won),
+        부채=asset_table["부채"].apply(won),
+        순자산=asset_table["순자산"].apply(won),
         비중=asset_table["비중"].apply(lambda x: f"{x:.1f}%")
     ),
     hide_index=True,
@@ -232,7 +247,7 @@ st.dataframe(
     use_container_width=True
 )
 
-st.info("※ 네이버 실거래가 자동 수집은 막힐 수 있어서, 1차 버전은 현재시세를 월 1회 숫자로 업데이트하는 방식이 안정적입니다.")
+st.info("※ 부동산 현재시세는 우선 월 1회 직접 업데이트하는 방식입니다.")
 
 st.divider()
 
@@ -255,6 +270,20 @@ st.dataframe(
 
 st.caption(f"환율 적용: 1달러 = {fx:,.0f}원")
 
+stock_summary = pd.DataFrame([
+    {"항목": "총 평가금액", "금액": stock_total},
+    {"항목": "부채", "금액": STOCK_DEBT},
+    {"항목": "순자산", "금액": stock_net},
+])
+
+st.markdown("### 📊 주식 요약")
+
+st.dataframe(
+    stock_summary.assign(금액=stock_summary["금액"].apply(won)),
+    hide_index=True,
+    use_container_width=True
+)
+
 st.divider()
 
 # -----------------------------
@@ -270,6 +299,20 @@ st.dataframe(
         평가손익=coin_df["평가손익"].apply(won),
         수익률=coin_df["수익률"].apply(lambda x: f"{x:.1f}%")
     ),
+    hide_index=True,
+    use_container_width=True
+)
+
+crypto_summary = pd.DataFrame([
+    {"항목": "총 평가금액", "금액": crypto_total},
+    {"항목": "부채", "금액": CRYPTO_DEBT},
+    {"항목": "순자산", "금액": crypto_net},
+])
+
+st.markdown("### 📊 코인 요약")
+
+st.dataframe(
+    crypto_summary.assign(금액=crypto_summary["금액"].apply(won)),
     hide_index=True,
     use_container_width=True
 )
